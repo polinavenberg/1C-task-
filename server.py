@@ -5,6 +5,7 @@ import threading
 
 
 def one_game(words_list, client_socket):
+    """ Функция запускает одну итерацию игры "Поле Чудес" """
     word = words_list[randint(0, len(words_list))]
     hidden_word = '*' * len(word)
     hidden_list = list(hidden_word)
@@ -50,6 +51,9 @@ def one_game(words_list, client_socket):
                 text_about_help += 'Зачем ломать игру? В слове нет буквы с таким номером\n'
                 text_about_help += hidden_word + '\n'
 
+            if i == tries - 1:
+                break
+
             text_every_step = 'Введите одну русскую букву или все слово сразу' + (
                 ' или напишите "подсказка"' if count_help < 1 else '') + '\n'
 
@@ -65,21 +69,18 @@ def one_game(words_list, client_socket):
                 letter = client_socket.recv(1024).decode('utf-8').lower()
 
             if len(letter) == len(word):
-                if letter == word:
-                    client_socket.send(('Ура, вы угадали слово\n' + 'Напишите "да", если хотите продолжить играть, иначе "нет"').encode('utf-8'))
-                    answer = client_socket.recv(1024).decode('utf-8').lower()
-                    if answer != "да":
-                        client_socket.send('End'.encode('utf-8'))
-                        return 0
-                    return 1
-                else:
-                    text_every_step = 'Введите одну русскую букву или все слово сразу' + (
-                        ' или напишите "подсказка"' if count_help < 1 else '') + '\n'
-                    text_to_send = text_every_step + 'Вы уже вводили эти буквы: ' + ' '.join(
-                        used_letters) + '\n' + 'У вас осталось ' + str(
-                        tries - i - 1) + ' попыток\n'
 
-                    client_socket.send(('Неправильное слово или неверный ввод\n' + hidden_word + '\n' + text_to_send).encode('utf-8'))
+                if i == tries - 1 or letter == word:
+                    hidden_word = word
+                    break
+
+                text_every_step = 'Введите одну русскую букву или все слово сразу' + (
+                    ' или напишите "подсказка"' if count_help < 1 else '') + '\n'
+                text_to_send = text_every_step + 'Вы уже вводили эти буквы: ' + ' '.join(
+                    used_letters) + '\n' + 'У вас осталось ' + str(
+                    tries - i - 1) + ' попыток\n'
+
+                client_socket.send(('Неправильное слово или неверный ввод\n' + hidden_word + '\n' + text_to_send).encode('utf-8'))
 
             else:
                 while (not (len(letter) == 1 and ord(letter) >= (ord('а')) and ord(
@@ -93,6 +94,8 @@ def one_game(words_list, client_socket):
                 used_letters.append(letter)
 
                 if letter not in word_list:
+                    if i == tries - 1:
+                        break
                     text_every_step = 'Введите одну русскую букву или все слово сразу' + (
                         ' или напишите "подсказка"' if count_help < 1 else '') + '\n'
                     text_to_send = text_every_step + 'Вы уже вводили эти буквы: ' + ' '.join(
@@ -108,34 +111,35 @@ def one_game(words_list, client_socket):
                             count += 1
 
                     hidden_word = ''.join(hidden_list)
-                    if '*' not in hidden_word:
-                        client_socket.send(('Поздравляю, вы угадали слово!\n' + 'Напишите "да", если хотите продолжить играть, иначе "нет".').encode('utf-8'))
-                        answer = client_socket.recv(1024).decode('utf-8').lower()
-                        if answer != "да":
-                            client_socket.send('End'.encode('utf-8'))
-                            return 0
-                        return 1
-                    else:
-                        text_every_step = 'Введите одну русскую букву или все слово сразу' + (
-                            ' или напишите "подсказка"' if count_help < 1 else '') + '\n'
 
-                        text_to_send = text_every_step + 'Вы уже вводили эти буквы: ' + ' '.join(
-                            used_letters) + '\n' + 'У вас осталось ' + str(
-                            tries - i - 1) + ' попыток\n'
+                    if i == tries - 1 or '*' not in hidden_word:
+                        break
+                    text_every_step = 'Введите одну русскую букву или все слово сразу' + (
+                        ' или напишите "подсказка"' if count_help < 1 else '') + '\n'
 
-                        client_socket.send(('вы угадали ' + str(count) + ' ' + ('букву\n' if count == 1 else 'буквы\n') + hidden_word + '\n' + text_to_send).encode('utf-8'))
-        if '*' in hidden_word and i == tries - 1:
-            client_socket.send(('К сожалению, вы проиграли\n' + 'Это было слово ' + word + '\n' + 'Напишите "да", если хотите продолжить играть, иначе "нет".').encode('utf-8'))
+                    text_to_send = text_every_step + 'Вы уже вводили эти буквы: ' + ' '.join(
+                        used_letters) + '\n' + 'У вас осталось ' + str(
+                        tries - i - 1) + ' попыток\n'
 
-            answer = client_socket.recv(1024).decode('utf-8').lower()
-            if answer == 'нет':
-                client_socket.send('End'.encode('utf-8'))
-                return 0
-            return 1
-    return 0
+                    client_socket.send(('вы угадали ' + str(count) + ' ' + ('букву\n' if count == 1 else 'буквы\n') + hidden_word + '\n' + text_to_send).encode('utf-8'))
+
+    if '*' in hidden_word:
+        client_socket.send(('К сожалению, вы проиграли\n' + 'Это было слово ' + word + '\n' + 'Напишите "да", если хотите продолжить играть, иначе "нет".').encode('utf-8'))
+
+    if '*' not in hidden_word:
+        client_socket.send(('Поздравляю, вы угадали слово!\n' + 'Напишите "да", если хотите продолжить играть, иначе "нет".').encode(
+            'utf-8'))
+    answer = client_socket.recv(1024).decode('utf-8').lower()
+    if answer != "да":
+        client_socket.send('End'.encode('utf-8'))
+        return 0
+    return 1
 
 
 def game(client_socket):
+    """Функция выводит правила игры и запускает игру, пока игрок не
+    захочет ее закончить"""
+
     rule = 'Игра "Поле Чудес". Вам загадано слово. \n' \
            'Вы можете ввести латинскую букву или все слово сразу. е = ё. ' \
            'Также за всю игру вы можете получить 1 подсказку. Удачи!\n'
@@ -149,8 +153,8 @@ def game(client_socket):
             break
 
 
-
 def main():
+    """Функция запускает поток, в котором запускается игра"""
     serv_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM, proto=0)
     serv_socket.bind(('127.0.0.1', 53210))
     serv_socket.listen(100)

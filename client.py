@@ -2,6 +2,9 @@ import socket
 
 
 if __name__ == '__main__':
+    """ Подключает клиента к серверу и взаимодейсвует с игроком во время 
+    игры"""
+
     client_sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     client_sock.connect(('127.0.0.1', 53210))
 
