@@ -27,7 +27,13 @@ def one_game(words_list, client_socket):
         if letter == 'подсказка' and count_help < 1:
             count_help += 1
             client_socket.send('Какую букву вы хотите открыть?'.encode('utf-8'))
-            ind = int(client_socket.recv(1024).decode('utf-8'))
+            ind = client_socket.recv(1024).decode('utf-8')
+            while not ind.isalpha():
+                client_socket.send(
+                    'Введите номер!!!'.encode('utf-8'))
+                ind = client_socket.recv(1024).decode('utf-8')
+            ind = int(ind)    
+
             text_about_help = ''
 
             while 0 < ind < len(hidden_word) and hidden_word[ind] != '*':
