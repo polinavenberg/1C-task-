@@ -28,11 +28,11 @@ def one_game(words_list, client_socket):
             count_help += 1
             client_socket.send('Какую букву вы хотите открыть?'.encode('utf-8'))
             ind = client_socket.recv(1024).decode('utf-8')
-            while not ind.isalpha():
+            while not (ord('1') <= ind <= ord('9')):
                 client_socket.send(
                     'Введите номер!!!'.encode('utf-8'))
                 ind = client_socket.recv(1024).decode('utf-8')
-            ind = int(ind)    
+            ind = int(ind)
 
             text_about_help = ''
 
